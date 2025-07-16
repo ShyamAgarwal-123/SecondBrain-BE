@@ -1,5 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import { JwtPayload } from "jsonwebtoken";
+
+declare module "express-serve-static-core" {
+  interface Request {
+    info?: UserJwtPayload;
+  }
+}
 
 export type ApiResponseReturnType = {
   statusCode: number;
@@ -10,15 +16,15 @@ export type ApiResponseReturnType = {
 };
 
 export type AsyncHandlerPropsType = (
-  req: NewRequestObjectType,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => void;
 
-export interface NewRequestObjectType extends Request {
-  info: UserJwtPayload;
-}
+// export interface NewRequestObjectType extends Request {
+//   info: UserJwtPayload;
+// }
 
 export interface UserJwtPayload extends JwtPayload {
-  _id: "string";
+  _id: string;
 }

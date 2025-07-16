@@ -13,7 +13,7 @@ export default class ApiResponse {
   path?: any;
   constructor({
     statusCode,
-    data = [],
+    data = {},
     message = "success",
     ...props
   }: ApiResponseOptions) {

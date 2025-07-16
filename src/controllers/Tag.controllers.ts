@@ -2,6 +2,7 @@ import ApiError from "api-error-ts";
 import AsyncHandler from "../utils/AsyncHandler";
 import Tag from "../models/Tag.models";
 import ApiResponse from "../utils/ApiResponse";
+import ErrorResponse from "../utils/ErrorResponse";
 
 export const createTag = AsyncHandler(async (req, res, next) => {
   try {
@@ -29,13 +30,6 @@ export const createTag = AsyncHandler(async (req, res, next) => {
       })
     );
   } catch (error: any) {
-    res
-      .json(
-        new ApiResponse({
-          message: error.message,
-          statusCode: error.statusCode || error.http_code || 500,
-        })
-      )
-      .status(error.statusCode || error.http_code || 500);
+    ErrorResponse(error, res);
   }
 });

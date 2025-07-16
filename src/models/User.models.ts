@@ -5,6 +5,7 @@ export interface IUser extends Document {
   username: string;
   email: string;
   password: string;
+  refreshToken: string;
   createdAt: Date;
   isPasswordCorrect(password: string): Promise<boolean>;
   generateAccessToken(): string;
@@ -16,6 +17,7 @@ const UserSchema = new Schema<IUser>(
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    refreshToken: { type: "String" },
     createdAt: { type: Date, default: Date.now },
   },
   {

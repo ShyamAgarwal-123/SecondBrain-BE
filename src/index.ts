@@ -1,12 +1,9 @@
-import app from "./app";
-import dbConnect from "./db";
-
 import { config } from "dotenv";
-
 config({
   path: "./.env",
 });
-
+import dbConnect from "./db";
+import app from "./app";
 dbConnect()
   .then(() => {
     app.on("error", (error: any) => {

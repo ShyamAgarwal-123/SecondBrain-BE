@@ -9,7 +9,6 @@ enum ContentTypes {
 
 export interface IContent extends Document {
   title: string;
-  // body: string;
   link: string;
   type: ContentTypes;
   userID: mongoose.Types.ObjectId;
@@ -19,7 +18,6 @@ export interface IContent extends Document {
 
 const ContentSchema: Schema = new Schema<IContent>({
   title: { type: String, required: true },
-  // body: { type: String, required: true },
   userID: { type: Schema.Types.ObjectId, ref: "User", required: true },
   type: { type: String, enum: ContentTypes, required: true },
   link: { type: String, required: true },

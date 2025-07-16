@@ -1,4 +1,5 @@
 import ApiError from "api-error-ts";
+import jwt from "jsonwebtoken";
 import {
   signInUserSchema,
   signInUserSchemaZod,
@@ -8,6 +9,13 @@ import {
 import AsyncHandler from "../utils/AsyncHandler";
 import User, { IUser } from "../models/User.models";
 import ApiResponse from "../utils/ApiResponse";
+import { UserJwtPayload } from "../types";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from "../utils/GenerateTokens";
+import ErrorResponse from "../utils/ErrorResponse";
+import Link from "../models/Link.models";
 
 export const signup = AsyncHandler(async (req, res, next) => {
   try {
@@ -51,13 +59,7 @@ export const signup = AsyncHandler(async (req, res, next) => {
       })
     );
   } catch (error: any) {
-    return res.status(error.statusCode || error.http_code || 500).json(
-      new ApiResponse({
-        message: error.message,
-        statusCode: error.statusCode || error.http_code || 500,
-        path: error.path,
-      })
-    );
+    ErrorResponse(error, res);
   }
 });
 
@@ -91,14 +93,8 @@ export const signin = AsyncHandler(async (req, res, next) => {
         statusCode: 400,
       });
     }
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
-    if (!accessToken && !refreshToken) {
-      throw new ApiError({
-        message: "Unable to generate tokens",
-        statusCode: 500,
-      });
-    }
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user);
 
     res
       .status(200)
@@ -116,11 +112,90 @@ export const signin = AsyncHandler(async (req, res, next) => {
         })
       );
   } catch (error: any) {
-    res.status(error.statusCode || error.http_code || 500).json(
+    ErrorResponse(error, res);
+  }
+});
+
+export const refreshAccessToken = AsyncHandler(async (req, res, next) => {
+  try {
+    const incomingRefreshToken =
+      req.cookies.refreshToken ||
+      req.headers?.authorization?.replace("Bearer ", "");
+
+    if (!incomingRefreshToken) {
+      throw new ApiError({
+        message: "Refresh Token Required",
+        statusCode: 403,
+      });
+    }
+    let verifiedToken;
+    try {
+      verifiedToken = jwt.verify(
+        incomingRefreshToken,
+        process.env.JWT_REFRESH_SECRET as string
+      ) as UserJwtPayload;
+    } catch (error) {
+      throw new ApiError({ statusCode: 401, message: "Invalid Refresh Token" });
+    }
+    const user = await User.findById(verifiedToken._id);
+    if (
+      !user ||
+      !user.refreshToken ||
+      user.refreshToken !== incomingRefreshToken
+    ) {
+      throw new ApiError({
+        message: "Invalid Refresh Token or User Logged out",
+        statusCode: 401,
+      });
+    }
+    const accessToken = generateAccessToken(user);
+    return res
+      .cookie("accessToken", accessToken, {
+        maxAge: 10 * 60 * 1000,
+      })
+      .status(200)
+      .json(
+        new ApiResponse({
+          statusCode: 200,
+          message: "Access Token is Successfully Refreshed",
+        })
+      );
+  } catch (error: any) {
+    ErrorResponse(error, res);
+  }
+});
+
+export const getUser = AsyncHandler(async (req, res, next) => {
+  try {
+    const _id = req.info?._id;
+
+    const user = await User.findById(_id);
+    if (!user) {
+      throw new ApiError({
+        message: "No Such User found Please signup",
+        statusCode: 400,
+      });
+    }
+    const link = await Link.findOne({ userID: _id });
+
+    let hash;
+    if (!link) {
+      hash = "";
+    } else {
+      hash = link.hash;
+    }
+    return res.status(200).json(
       new ApiResponse({
-        message: error.message,
-        statusCode: error.statusCode || error.http_code || 500,
+        statusCode: 200,
+        data: {
+          username: user.username,
+          email: user.email,
+          hash,
+        },
+        message: "Successfully got User",
       })
     );
+  } catch (error: any) {
+    ErrorResponse(error, res);
   }
 });

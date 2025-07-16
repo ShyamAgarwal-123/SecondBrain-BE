@@ -1,14 +1,11 @@
-import ApiError, { ApiErrorOptions } from "api-error-ts";
-import jwt from "jsonwebtoken";
+import ApiError from "api-error-ts";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { NewRequestObjectType, UserJwtPayload } from "../types";
+import { UserJwtPayload } from "../types";
 import ApiResponse from "../utils/ApiResponse";
+import ErrorResponse from "../utils/ErrorResponse";
 
-export const Auth = (
-  req: NewRequestObjectType,
-  res: Response,
-  next: NextFunction
-) => {
+export const Auth = (req: Request, res: Response, next: NextFunction) => {
   try {
     const token =
       req.cookies.accessToken ||
@@ -19,20 +16,21 @@ export const Auth = (
         message: "Access Token Required",
       });
     }
-    const verifiedToken = jwt.verify(
-      token,
-      process.env.JWT_ACCESS_SECRET as string
-    );
+    let verifiedToken;
+    try {
+      verifiedToken = jwt.verify(
+        token,
+        process.env.JWT_ACCESS_SECRET as string
+      );
+    } catch (error) {
+      throw new ApiError({
+        message: "Invalid Access Token",
+        statusCode: 401,
+      });
+    }
     req.info = verifiedToken as UserJwtPayload;
     next();
   } catch (error: any) {
-    res
-      .json(
-        new ApiResponse({
-          statusCode: error.statusCode || error.http_code || 500,
-          message: error.message,
-        })
-      )
-      .status(error.statusCode || error.http_code || 500);
+    ErrorResponse(error, res);
   }
 };
