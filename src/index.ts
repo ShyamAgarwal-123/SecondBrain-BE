@@ -11,7 +11,7 @@ dbConnect()
       process.exit(1);
     });
     app.listen(process.env.PORT as string, () => {
-      console.log(`App is listening at Port: ${process.env.PORT}`);
+      console.log(`App is listening at Port: ${process.env.PORT || 3030}`);
     });
   })
   .catch((err: any) => {
