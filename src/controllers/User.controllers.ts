@@ -96,6 +96,15 @@ export const signin = AsyncHandler(async (req, res, next) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = await generateRefreshToken(user);
 
+    const link = await Link.findOne({ userID: user._id });
+
+    let hash;
+    if (!link) {
+      hash = "";
+    } else {
+      hash = link.hash;
+    }
+
     res
       .status(200)
       .cookie("accessToken", accessToken, {
@@ -107,7 +116,11 @@ export const signin = AsyncHandler(async (req, res, next) => {
       .json(
         new ApiResponse({
           statusCode: 200,
-          data: user,
+          data: {
+            username: user.username,
+            email: user.email,
+            hash,
+          },
           message: "User Signin Successfully",
         })
       );

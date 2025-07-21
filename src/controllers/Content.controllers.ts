@@ -26,17 +26,33 @@ export const uploadContent = AsyncHandler(async (req, res, next) => {
         path: verifiedInput.error.issues?.[0].path?.[0] as string,
       });
     }
+
+    let isCorrect;
     let updatedLink;
     switch (type) {
       case "tweet":
+        isCorrect = link.includes("https://x.com/");
         updatedLink = link.replace("x.com", "twitter.com");
         break;
       case "youtube":
+        isCorrect = link.includes("https://youtu.be/");
         updatedLink = link.replace("youtu.be", "www.youtube.com/embed");
         break;
-      default:
+      case "link":
+        isCorrect = (link.match(/http/g) || []).length === 1;
         updatedLink = link;
         break;
+      default:
+        isCorrect = true;
+        updatedLink = link;
+        break;
+    }
+    if (!isCorrect) {
+      throw new ApiError({
+        message: `Incorrect Type`,
+        statusCode: 400,
+        path: "type",
+      });
     }
     const content = await Content.create({
       title,
